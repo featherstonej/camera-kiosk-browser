@@ -169,6 +169,26 @@ The application maintains a log file for troubleshooting on headless devices.
 - **Location**: `~/.config/camera-kiosk-browser/logs/kiosk.log` (typical path on Linux)
 - You can also find the exact path by running the app manually and looking at the startup log.
 
+## Manual Updates
+
+Since auto-updates are disabled to prevent interruptions, you can manually update the application by following these steps:
+
+1.  **Update Dependencies** (on your development machine):
+    ```bash
+    npm install electron@latest --save-dev
+    npm update
+    ```
+
+2.  **Rebuild the Package**:
+    ```bash
+    npm run build  # or npm run build:arm64
+    ```
+
+3.  **Redeploy to the Pi**:
+    - Transfer the new `.deb` file using `scp`.
+    - Install on the Pi using `sudo dpkg -i <filename>.deb`.
+    - Restart the service or reboot the Pi.
+
 ## Technical Details
 
 ### Connection Limits
