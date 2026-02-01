@@ -85,8 +85,9 @@ Edit `config.json` to customize the browser behavior:
 - **url**: The URL of your Motion camera feed page
 - **fullscreen**: Enable fullscreen kiosk mode (true/false)
 - **zoomLevel**: Browser zoom factor (e.g., 0.9 for 90%, 1.0 for 100%)
-- **reloadSchedule**: Time-based reloading logic
-    - **enabled**: Use scheduled reloading (true/false)
+- **gridColumns**: Number of columns for the camera grid (default: 4)
+- **hideSelectors**: Array of CSS selectors to hide (e.g., `[".menu", "#ads"]`)
+- **autoReload**: Enable automatic page refresh on load failure (true/false)
     - **activeStartHour**: Start of active window (0-23)
     - **activeEndHour**: End of active window (0-23)
     - **activeInterval**: MS between reloads during active hours (e.g., 3600000 for 1 hour)
@@ -161,6 +162,12 @@ If you need to exit the kiosk browser:
 ### Connection Issues
 
 The browser is configured to allow unlimited connections to the same host, so you should be able to display as many camera feeds as your network and Pi can handle.
+
+### Logging
+
+The application maintains a log file for troubleshooting on headless devices.
+- **Location**: `~/.config/camera-kiosk-browser/logs/kiosk.log` (typical path on Linux)
+- You can also find the exact path by running the app manually and looking at the startup log.
 
 ## Technical Details
 

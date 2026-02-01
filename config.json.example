@@ -1,0 +1,19 @@
+{
+    "url": "http://localhost:8080/",
+    "fullscreen": true,
+    "disableShortcuts": true,
+    "enableDebugExit": true,
+    "zoomLevel": 1.0,
+    "gridColumns": 4,
+    "hideSelectors": [
+        ".extra-ad-bar",
+        "#sidebar-to-hide"
+    ],
+    "reloadSchedule": {
+        "enabled": true,
+        "activeStartHour": 7,
+        "activeEndHour": 19,
+        "activeInterval": 3600000,
+        "offInterval": 0
+    }
+}
