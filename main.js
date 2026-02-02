@@ -44,7 +44,7 @@ function log(message) {
     }
 }
 
-// Validate and sanitize CSS selectors to prevent CSS injection
+// Validate CSS selectors to prevent CSS injection; returns true only for allowed selectors
 function validateCssSelector(selector) {
     if (typeof selector !== 'string' || !selector.trim()) {
         return false;
