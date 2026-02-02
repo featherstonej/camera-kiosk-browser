@@ -22,20 +22,30 @@ let config = {
 };
 
 // Simple logging helper
-const logPath = path.join(app.getPath('userData'), 'kiosk.log');
+let logPath = null;
 function log(message) {
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] ${message}\n`;
     console.log(formattedMessage.trim());
-    try {
-        fs.appendFileSync(logPath, formattedMessage);
-    } catch (err) {
-        console.error('Failed to write to log file:', err);
+
+    // Initialize log path only after the app is ready
+    if (app.isReady()) {
+        if (!logPath) {
+            logPath = path.join(app.getPath('userData'), 'kiosk.log');
+        }
+    }
+
+    if (logPath) {
+        try {
+            fs.appendFileSync(logPath, formattedMessage);
+        } catch (err) {
+            console.error('Failed to write to log file:', err);
+        }
     }
 }
 
 log('Starting Camera Kiosk Browser...');
-log(`Log file location: ${logPath}`);
+log('Log file location will be set after the app is ready.');
 
 try {
     const configPath = path.join(__dirname, 'config.json');
