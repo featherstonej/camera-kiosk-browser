@@ -207,7 +207,7 @@ The browser automatically:
 
 ### Security
 
-- **CSS Sanitization**: Any selectors provided in `hideSelectors` are validated to prevent CSS injection attacks. Invalid or dangerous selectors (e.g., those containing `;`, `{`, or `@`) will be rejected and logged as a warning.
+- **CSS Sanitization**: Any selectors provided in `hideSelectors` are validated to prevent CSS injection attacks. Invalid or dangerous selectors (e.g., those containing `;` or `{`, or starting with `@` such as CSS at-rules) will be rejected and logged as a warning.
 - **Web Security**: Standard Electron web security features are enabled (`contextIsolation: true`, `nodeIntegration: false`).
 
 ## Development
