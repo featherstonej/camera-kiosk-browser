@@ -44,6 +44,54 @@ function log(message) {
     }
 }
 
+// Validate and sanitize CSS selectors to prevent CSS injection
+function validateCssSelector(selector) {
+    if (typeof selector !== 'string' || !selector.trim()) {
+        return false;
+    }
+    
+    // Remove leading/trailing whitespace
+    selector = selector.trim();
+    
+    // Check for dangerous characters that could break CSS syntax or inject code
+    const dangerousPatterns = [
+        /[;{}\\]/,  // Semicolons, braces, backslashes (blocks CSS escaping for security)
+        /\/\*/,     // Start of CSS comment
+        /\*\//,     // End of CSS comment
+        /^@/,       // At-rules at start (blocks @import, @media, etc.)
+        /^\s*$/     // Empty or whitespace only
+    ];
+    
+    for (const pattern of dangerousPatterns) {
+        if (pattern.test(selector)) {
+            return false;
+        }
+    }
+    
+    // Basic validation: selector should start with valid characters
+    // Valid selectors start with: . # [ : * > ~ + or an element name (letter)
+    // We also allow whitespace before combinators
+    if (!/^[\s.#\[:\*>~+a-zA-Z]/.test(selector)) {
+        return false;
+    }
+    
+    // Check for unmatched brackets (attribute selectors)
+    const openBrackets = (selector.match(/\[/g) || []).length;
+    const closeBrackets = (selector.match(/\]/g) || []).length;
+    if (openBrackets !== closeBrackets) {
+        return false;
+    }
+    
+    // Check for unmatched parentheses (pseudo-classes like :not())
+    const openParens = (selector.match(/\(/g) || []).length;
+    const closeParens = (selector.match(/\)/g) || []).length;
+    if (openParens !== closeParens) {
+        return false;
+    }
+    
+    return true;
+}
+
 log('Starting Camera Kiosk Browser...');
 log('Log file location will be set after the app is ready.');
 
@@ -112,7 +160,17 @@ function createWindow() {
 
         // Apply targeted layout fix for Motion's legacy HTML
         setTimeout(() => {
-            const customHide = (config.hideSelectors || []).join(', ');
+            // Validate and sanitize custom hide selectors
+            const validatedSelectors = (config.hideSelectors || [])
+                .filter(selector => {
+                    const isValid = validateCssSelector(selector);
+                    if (!isValid) {
+                        log(`WARNING: Rejected invalid CSS selector: "${selector}"`);
+                    }
+                    return isValid;
+                });
+            
+            const customHide = validatedSelectors.join(', ');
             const hideRules = customHide ? `, ${customHide}` : '';
 
             mainWindow.webContents.insertCSS(`
