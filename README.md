@@ -85,8 +85,8 @@ Edit `config.json` to customize the browser behavior:
 - **url**: The URL of your Motion camera feed page
 - **fullscreen**: Enable fullscreen kiosk mode (true/false)
 - **zoomLevel**: Browser zoom factor (e.g., 0.9 for 90%, 1.0 for 100%)
-- **gridColumns**: Number of columns for the camera grid (default: 4)
-- **hideSelectors**: Array of CSS selectors to hide (e.g., `[".menu", "#ads"]`)
+- **gridColumns**: Number of columns for the camera grid (default: 4). Must be a positive integer.
+- **hideSelectors**: Array of CSS selectors to hide (e.g., `[".menu", "#ads"]`). These are validated and filtered to prevent CSS injection; unsafe selectors are rejected.
 - **autoReload**: Enable automatic page refresh on load failure (true/false)
     - **activeStartHour**: Start of active window (0-23)
     - **activeEndHour**: End of active window (0-23)
@@ -203,7 +203,12 @@ This browser removes the standard HTTP/1.1 connection limit by:
 The browser automatically:
 - Retries failed page loads after 5 seconds
 - Reloads on render process crashes
-- Logs errors for debugging
+- Logs errors and configuration warnings to `kiosk.log`
+
+### Security
+
+- **CSS Sanitization**: Any selectors provided in `hideSelectors` are validated to prevent CSS injection attacks. Invalid or dangerous selectors (e.g., those containing `;` or `{`, or starting with `@` such as CSS at-rules) will be rejected and logged as a warning.
+- **Web Security**: Standard Electron web security features are enabled (`contextIsolation: true`, `nodeIntegration: false`).
 
 ## Development
 

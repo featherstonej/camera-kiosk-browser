@@ -44,6 +44,53 @@ function log(message) {
     }
 }
 
+// Validate CSS selectors to prevent CSS injection; returns true only for allowed selectors
+function validateCssSelector(selector) {
+    if (typeof selector !== 'string' || !selector.trim()) {
+        return false;
+    }
+    
+    // Remove leading/trailing whitespace
+    selector = selector.trim();
+    
+    // Check for dangerous characters that could break CSS syntax or inject code
+    const dangerousPatterns = [
+        /[;{}\\]/,  // Semicolons, braces, backslashes (blocks CSS escaping for security)
+        /\/\*/,     // Start of CSS comment
+        /\*\//,     // End of CSS comment
+        /^@/        // At-rules at start (blocks @import, @media, etc.)
+    ];
+    
+    for (const pattern of dangerousPatterns) {
+        if (pattern.test(selector)) {
+            return false;
+        }
+    }
+    
+    // Basic validation: selector should start with valid characters
+    // Valid selectors start with: . # [ : * > ~ + or an element name (letter)
+    // We also allow whitespace before combinators
+    if (!/^[\s.#\[:\*>~+a-zA-Z]/.test(selector)) {
+        return false;
+    }
+    
+    // Check for unmatched brackets (attribute selectors)
+    const openBrackets = (selector.match(/\[/g) || []).length;
+    const closeBrackets = (selector.match(/\]/g) || []).length;
+    if (openBrackets !== closeBrackets) {
+        return false;
+    }
+    
+    // Check for unmatched parentheses (pseudo-classes like :not())
+    const openParens = (selector.match(/\(/g) || []).length;
+    const closeParens = (selector.match(/\)/g) || []).length;
+    if (openParens !== closeParens) {
+        return false;
+    }
+    
+    return true;
+}
+
 log('Starting Camera Kiosk Browser...');
 log('Log file location will be set after the app is ready.');
 
@@ -54,6 +101,15 @@ try {
     }
 } catch (error) {
     console.error('Error loading config:', error);
+}
+
+// Validate gridColumns is a positive integer
+if (config.gridColumns == null || 
+    typeof config.gridColumns !== 'number' || 
+    !Number.isInteger(config.gridColumns) || 
+    config.gridColumns <= 0) {
+    log(`Invalid gridColumns value: ${config.gridColumns}. Must be a positive integer. Using default value of 4.`);
+    config.gridColumns = 4;
 }
 
 let mainWindow;
@@ -112,7 +168,17 @@ function createWindow() {
 
         // Apply targeted layout fix for Motion's legacy HTML
         setTimeout(() => {
-            const customHide = (config.hideSelectors || []).join(', ');
+            // Validate and sanitize custom hide selectors
+            const validatedSelectors = (config.hideSelectors || [])
+                .filter(selector => {
+                    const isValid = validateCssSelector(selector);
+                    if (!isValid) {
+                        log(`WARNING: Rejected invalid CSS selector: "${selector}"`);
+                    }
+                    return isValid;
+                });
+            
+            const customHide = validatedSelectors.join(', ');
             const hideRules = customHide ? `, ${customHide}` : '';
 
             mainWindow.webContents.insertCSS(`
@@ -177,7 +243,19 @@ function createWindow() {
                 html {
                     zoom: ${config.zoomLevel || 1.0} !important;
                 }
-            `).catch(err => console.error('Failed to inject layout CSS:', err));
+            `).catch(err => {
+                const errorDetail =
+                    (err && err.stack) ? err.stack :
+                    (err && err.message) ? err.message :
+                    (function () {
+                        try {
+                            return JSON.stringify(err);
+                        } catch (e) {
+                            return String(err);
+                        }
+                    })();
+                log(`Failed to inject layout CSS: ${errorDetail}`);
+            });
         }, 500);
 
         // Set up periodic reload if enabled
