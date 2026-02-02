@@ -104,6 +104,15 @@ try {
     console.error('Error loading config:', error);
 }
 
+// Validate gridColumns is a positive integer
+if (config.gridColumns == null || 
+    typeof config.gridColumns !== 'number' || 
+    !Number.isInteger(config.gridColumns) || 
+    config.gridColumns <= 0) {
+    log(`Invalid gridColumns value: ${config.gridColumns}. Must be a positive integer. Using default value of 4.`);
+    config.gridColumns = 4;
+}
+
 let mainWindow;
 let reloadTimer;
 
