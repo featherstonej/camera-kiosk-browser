@@ -244,7 +244,19 @@ function createWindow() {
                 html {
                     zoom: ${config.zoomLevel || 1.0} !important;
                 }
-            `).catch(err => log(`Failed to inject layout CSS: ${err.message || err}`));
+            `).catch(err => {
+                const errorDetail =
+                    (err && err.stack) ? err.stack :
+                    (err && err.message) ? err.message :
+                    (function () {
+                        try {
+                            return JSON.stringify(err);
+                        } catch (e) {
+                            return String(err);
+                        }
+                    })();
+                log(`Failed to inject layout CSS: ${errorDetail}`);
+            });
         }, 500);
 
         // Set up periodic reload if enabled
