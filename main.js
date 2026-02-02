@@ -47,7 +47,8 @@ function sanitizeCSSSelector(selector) {
     
     // Basic validation: check if selector looks like a valid CSS selector
     // Must start with a valid character (., #, [, :, or alphanumeric)
-    if (!/^[\w.#:[\-*>+~(]/.test(sanitized.trim())) {
+    // Fixed: moved hyphen to end of character class to avoid invalid range
+    if (!/^[\w.#:[\*>+~(\-]/.test(sanitized.trim())) {
         log(`Invalid CSS selector rejected: "${selector}"`);
         return null;
     }
@@ -124,15 +125,16 @@ function createWindow() {
         // Apply targeted layout fix for Motion's legacy HTML
         setTimeout(() => {
             // Validate and sanitize custom selectors to prevent CSS injection
-            const sanitizedSelectors = (config.hideSelectors || [])
+            const originalSelectors = config.hideSelectors || [];
+            const sanitizedSelectors = originalSelectors
                 .map(sanitizeCSSSelector)
                 .filter(s => s !== null);
             
             const customHide = sanitizedSelectors.join(', ');
             const hideRules = customHide ? `, ${customHide}` : '';
             
-            if (sanitizedSelectors.length < (config.hideSelectors || []).length) {
-                log(`Warning: ${(config.hideSelectors || []).length - sanitizedSelectors.length} invalid selector(s) were rejected`);
+            if (sanitizedSelectors.length < originalSelectors.length) {
+                log(`Warning: ${originalSelectors.length - sanitizedSelectors.length} invalid selector(s) were rejected`);
             }
 
             mainWindow.webContents.insertCSS(`
