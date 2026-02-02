@@ -166,7 +166,7 @@ The browser is configured to allow unlimited connections to the same host, so yo
 ### Logging
 
 The application maintains a log file for troubleshooting on headless devices.
-- **Location**: `~/.config/camera-kiosk-browser/logs/kiosk.log` (typical path on Linux)
+- **Location**: `~/.config/camera-kiosk-browser/kiosk.log` (typical path on Linux)
 - You can also find the exact path by running the app manually and looking at the startup log.
 
 ## Manual Updates
