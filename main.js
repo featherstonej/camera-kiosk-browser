@@ -34,6 +34,27 @@ function log(message) {
     }
 }
 
+// CSS selector validation to prevent injection attacks
+function sanitizeCSSSelector(selector) {
+    if (typeof selector !== 'string' || selector.trim().length === 0) {
+        return null;
+    }
+    
+    // Remove any potentially dangerous characters that could break CSS syntax
+    // Allow: alphanumeric, hyphen, underscore, dot, hash, space, >, +, ~, *, [, ], =, ^, $, |, :, ()
+    // These are standard CSS selector characters
+    const sanitized = selector.replace(/[{};"'`\\]/g, '');
+    
+    // Basic validation: check if selector looks like a valid CSS selector
+    // Must start with a valid character (., #, [, :, or alphanumeric)
+    if (!/^[\w.#:[\-*>+~(]/.test(sanitized.trim())) {
+        log(`Invalid CSS selector rejected: "${selector}"`);
+        return null;
+    }
+    
+    return sanitized.trim();
+}
+
 log('Starting Camera Kiosk Browser...');
 log(`Log file location: ${logPath}`);
 
@@ -102,8 +123,17 @@ function createWindow() {
 
         // Apply targeted layout fix for Motion's legacy HTML
         setTimeout(() => {
-            const customHide = (config.hideSelectors || []).join(', ');
+            // Validate and sanitize custom selectors to prevent CSS injection
+            const sanitizedSelectors = (config.hideSelectors || [])
+                .map(sanitizeCSSSelector)
+                .filter(s => s !== null);
+            
+            const customHide = sanitizedSelectors.join(', ');
             const hideRules = customHide ? `, ${customHide}` : '';
+            
+            if (sanitizedSelectors.length < (config.hideSelectors || []).length) {
+                log(`Warning: ${(config.hideSelectors || []).length - sanitizedSelectors.length} invalid selector(s) were rejected`);
+            }
 
             mainWindow.webContents.insertCSS(`
                 /* 0. Hide menu bars and headers */
