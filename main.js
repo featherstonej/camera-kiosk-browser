@@ -44,12 +44,11 @@ function validateCssSelector(selector) {
     selector = selector.trim();
     
     // Check for dangerous characters that could break CSS syntax or inject code
-    // We block: semicolons, braces, quotes (unless part of attribute selectors), backslashes
     const dangerousPatterns = [
-        /[;{}\\]/,  // Semicolons, braces, backslashes
+        /[;{}\\]/,  // Semicolons, braces, backslashes (blocks CSS escaping for security)
         /\/\*/,     // Start of CSS comment
         /\*\//,     // End of CSS comment
-        /@/,        // At-rules
+        /^@/,       // At-rules at start (blocks @import, @media, etc.)
         /^\s*$/     // Empty or whitespace only
     ];
     
@@ -60,8 +59,9 @@ function validateCssSelector(selector) {
     }
     
     // Basic validation: selector should start with valid characters
-    // Valid selectors start with: . # [ : * or an element name (letter)
-    if (!/^[.#\[:\*a-zA-Z]/.test(selector)) {
+    // Valid selectors start with: . # [ : * > ~ + or an element name (letter)
+    // We also allow whitespace before combinators
+    if (!/^[\s.#\[:\*>~+a-zA-Z]/.test(selector)) {
         return false;
     }
     
