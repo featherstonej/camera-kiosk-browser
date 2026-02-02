@@ -1,7 +1,7 @@
 {
   "name": "camera-kiosk-browser",
   "homepage": "https://github.com/james/camera-kiosk-browser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Kiosk browser for displaying security camera feeds on Raspberry Pi",
   "main": "main.js",
   "scripts": {

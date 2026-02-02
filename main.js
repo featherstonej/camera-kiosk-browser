@@ -10,6 +10,8 @@ let config = {
     disableShortcuts: true,
     enableDebugExit: true,
     zoomLevel: 1.0,
+    gridColumns: 4,
+    hideSelectors: [],
     reloadSchedule: {
         enabled: true,
         activeStartHour: 7,
@@ -18,6 +20,32 @@ let config = {
         offInterval: 0
     }
 };
+
+// Simple logging helper
+let logPath = null;
+function log(message) {
+    const timestamp = new Date().toISOString();
+    const formattedMessage = `[${timestamp}] ${message}\n`;
+    console.log(formattedMessage.trim());
+
+    // Initialize log path only after the app is ready
+    if (app.isReady()) {
+        if (!logPath) {
+            logPath = path.join(app.getPath('userData'), 'kiosk.log');
+        }
+    }
+
+    if (logPath) {
+        try {
+            fs.appendFileSync(logPath, formattedMessage);
+        } catch (err) {
+            console.error('Failed to write to log file:', err);
+        }
+    }
+}
+
+log('Starting Camera Kiosk Browser...');
+log('Log file location will be set after the app is ready.');
 
 try {
     const configPath = path.join(__dirname, 'config.json');
@@ -67,11 +95,12 @@ function createWindow() {
 
     // Load the camera feed URL
     mainWindow.loadURL(config.url);
+    log(`Loading URL: ${config.url}`);
 
     // Handle load failures with auto-reload
     mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-        console.error(`Failed to load: ${errorDescription} (${errorCode})`);
-        console.log('Retrying in 5 seconds...');
+        log(`Failed to load: ${errorDescription} (${errorCode})`);
+        log('Retrying in 5 seconds...');
         setTimeout(() => {
             mainWindow.loadURL(config.url);
         }, 5000);
@@ -79,14 +108,16 @@ function createWindow() {
 
     // Successful load
     mainWindow.webContents.on('did-finish-load', () => {
-        console.log('Page loaded successfully');
+        log('Page loaded successfully');
 
         // Apply targeted layout fix for Motion's legacy HTML
-        // This forces a modern 3-column grid regardless of Motion's hardcoded widths
         setTimeout(() => {
+            const customHide = (config.hideSelectors || []).join(', ');
+            const hideRules = customHide ? `, ${customHide}` : '';
+
             mainWindow.webContents.insertCSS(`
                 /* 0. Hide menu bars and headers */
-                header, .header, #header, .navbar, #navbar, .menu, #menu, .top-bar, #top-bar {
+                header, .header, #header, .navbar, #navbar, .menu, #menu, .top-bar, #top-bar${hideRules} {
                     display: none !important;
                 }
 
@@ -102,10 +133,10 @@ function createWindow() {
                     overflow: hidden !important;
                 }
 
-                /* 1. Force the container into a 4-column grid */
+                /* 1. Force the container into a configurable grid */
                 #id_preview {
                     display: grid !important;
-                    grid-template-columns: repeat(4, 1fr) !important;
+                    grid-template-columns: repeat(${config.gridColumns || 4}, 1fr) !important;
                     gap: 10px !important;
                     padding: 10px !important;
                     width: 100% !important;
@@ -153,7 +184,7 @@ function createWindow() {
         if (config.autoReload && config.reloadInterval > 0) {
             if (reloadTimer) clearInterval(reloadTimer);
             reloadTimer = setInterval(() => {
-                console.log('Auto-reloading page...');
+                log('Auto-reloading page...');
                 mainWindow.reload();
             }, config.reloadInterval);
         }
@@ -172,7 +203,7 @@ function createWindow() {
             if (input.control || input.meta) {
                 // Handle secret exit: Ctrl+Shift+X (or Cmd+Shift+X)
                 if (config.enableDebugExit && input.shift && input.key.toLowerCase() === 'x') {
-                    console.log('Secret exit triggered. Quitting...');
+                    log('Secret exit triggered. Quitting...');
                     app.quit();
                     return;
                 }
@@ -247,17 +278,17 @@ function scheduleNextReload() {
     }
 
     if (interval > 0) {
-        console.log(`[Reload Schedule] ${mode} mode. Next reload in ${interval / 1000 / 60} minutes.`);
+        log(`[Reload Schedule] ${mode} mode. Next reload in ${interval / 1000 / 60} minutes.`);
         setTimeout(() => {
             if (mainWindow) {
-                console.log('[Reload Schedule] Executing scheduled reload...');
+                log('[Reload Schedule] Executing scheduled reload...');
                 mainWindow.reload();
             }
             // Chain the next calculation after this one finishes/triggers
             scheduleNextReload();
         }, interval);
     } else {
-        console.log(`[Reload Schedule] ${mode} mode. Auto-reload is currently disabled/idle.`);
+        log(`[Reload Schedule] ${mode} mode. Auto-reload is currently disabled/idle.`);
         // Check again in 15 minutes to see if we've entered an active window
         setTimeout(scheduleNextReload, 15 * 60 * 1000);
     }
@@ -272,7 +303,7 @@ app.on('window-all-closed', () => {
 
 // Handle crashes and unresponsive pages
 app.on('render-process-gone', (event, webContents, details) => {
-    console.error('Render process gone:', details);
+    log(`Render process gone: ${JSON.stringify(details)}`);
     if (mainWindow) {
         mainWindow.reload();
     }
@@ -280,5 +311,5 @@ app.on('render-process-gone', (event, webContents, details) => {
 
 // Log any uncaught exceptions
 process.on('uncaughtException', (error) => {
-    console.error('Uncaught exception:', error);
+    log(`Uncaught exception: ${error.message}\n${error.stack}`);
 });
