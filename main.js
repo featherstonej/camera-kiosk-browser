@@ -58,8 +58,7 @@ function validateCssSelector(selector) {
         /[;{}\\]/,  // Semicolons, braces, backslashes (blocks CSS escaping for security)
         /\/\*/,     // Start of CSS comment
         /\*\//,     // End of CSS comment
-        /^@/,       // At-rules at start (blocks @import, @media, etc.)
-        /^\s*$/     // Empty or whitespace only
+        /^@/        // At-rules at start (blocks @import, @media, etc.)
     ];
     
     for (const pattern of dangerousPatterns) {
