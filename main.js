@@ -177,7 +177,7 @@ function createWindow() {
                 html {
                     zoom: ${config.zoomLevel || 1.0} !important;
                 }
-            `).catch(err => console.error('Failed to inject layout CSS:', err));
+            `).catch(err => log(`Failed to inject layout CSS: ${err.message || err}`));
         }, 500);
 
         // Set up periodic reload if enabled
