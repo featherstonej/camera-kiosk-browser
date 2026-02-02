@@ -86,7 +86,7 @@ Edit `config.json` to customize the browser behavior:
 - **fullscreen**: Enable fullscreen kiosk mode (true/false)
 - **zoomLevel**: Browser zoom factor (e.g., 0.9 for 90%, 1.0 for 100%)
 - **gridColumns**: Number of columns for the camera grid (default: 4). Must be a positive integer.
-- **hideSelectors**: Array of CSS selectors to hide (e.g., `[".menu", "#ads"]`). These are sanitized to prevent CSS injection.
+- **hideSelectors**: Array of CSS selectors to hide (e.g., `[".menu", "#ads"]`). These are validated and filtered to prevent CSS injection; unsafe selectors are rejected.
 - **autoReload**: Enable automatic page refresh on load failure (true/false)
     - **activeStartHour**: Start of active window (0-23)
     - **activeEndHour**: End of active window (0-23)
