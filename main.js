@@ -49,10 +49,10 @@ function validateCssSelector(selector) {
     if (typeof selector !== 'string' || !selector.trim()) {
         return false;
     }
-    
+
     // Remove leading/trailing whitespace
     selector = selector.trim();
-    
+
     // Check for dangerous characters that could break CSS syntax or inject code
     const dangerousPatterns = [
         /[;{}\\]/,  // Semicolons, braces, backslashes (blocks CSS escaping for security)
@@ -60,53 +60,102 @@ function validateCssSelector(selector) {
         /\*\//,     // End of CSS comment
         /^@/        // At-rules at start (blocks @import, @media, etc.)
     ];
-    
+
     for (const pattern of dangerousPatterns) {
         if (pattern.test(selector)) {
             return false;
         }
     }
-    
+
     // Basic validation: selector should start with valid characters
     // Valid selectors start with: . # [ : * > ~ + or an element name (letter)
     // We also allow whitespace before combinators
     if (!/^[\s.#\[:\*>~+a-zA-Z]/.test(selector)) {
         return false;
     }
-    
+
     // Check for unmatched brackets (attribute selectors)
     const openBrackets = (selector.match(/\[/g) || []).length;
     const closeBrackets = (selector.match(/\]/g) || []).length;
     if (openBrackets !== closeBrackets) {
         return false;
     }
-    
+
     // Check for unmatched parentheses (pseudo-classes like :not())
     const openParens = (selector.match(/\(/g) || []).length;
     const closeParens = (selector.match(/\)/g) || []).length;
     if (openParens !== closeParens) {
         return false;
     }
-    
+
     return true;
 }
 
 log('Starting Camera Kiosk Browser...');
 log('Log file location will be set after the app is ready.');
 
+// Search for config in multiple locations and initialize if missing
+const userConfigDir = app.getPath('userData');
+const userConfigPath = path.join(userConfigDir, 'config.json');
+
+function initializeConfig() {
+    try {
+        // 1. Check if user config already exists
+        if (fs.existsSync(userConfigPath)) {
+            const fileConfig = JSON.parse(fs.readFileSync(userConfigPath, 'utf8'));
+            config = { ...config, ...fileConfig };
+            log(`Loaded config from: ${userConfigPath}`);
+            return;
+        }
+
+        // 2. If not, try to initialize from example
+        // In production, config.json.example is in the resources folder
+        const examplePaths = [
+            path.join(__dirname, 'config.json.example'),
+            path.join(process.resourcesPath, 'config.json.example'),
+            path.join(process.resourcesPath, 'app', 'config.json.example')
+        ];
+
+        for (const examplePath of examplePaths) {
+            if (fs.existsSync(examplePath)) {
+                if (!fs.existsSync(userConfigDir)) {
+                    fs.mkdirSync(userConfigDir, { recursive: true });
+                }
+                fs.copyFileSync(examplePath, userConfigPath);
+                log(`Initialized new config from: ${examplePath}`);
+
+                // Load the newly created config
+                const fileConfig = JSON.parse(fs.readFileSync(userConfigPath, 'utf8'));
+                config = { ...config, ...fileConfig };
+                return;
+            }
+        }
+
+        log('No config file found and could not find example to initialize.');
+    } catch (error) {
+        log(`Error initializing config: ${error.message}`);
+    }
+}
+
+// Call initialization
+initializeConfig();
+
+// Also check for hidden home config (legacy/optional)
+const homeConfigPath = path.join(process.env.HOME || '', '.camera-kiosk-browser.json');
 try {
-    const configPath = path.join(__dirname, 'config.json');
-    if (fs.existsSync(configPath)) {
-        config = { ...config, ...JSON.parse(fs.readFileSync(configPath, 'utf8')) };
+    if (fs.existsSync(homeConfigPath)) {
+        const fileConfig = JSON.parse(fs.readFileSync(homeConfigPath, 'utf8'));
+        config = { ...config, ...fileConfig };
+        log(`Loaded additional config from: ${homeConfigPath}`);
     }
 } catch (error) {
-    console.error('Error loading config:', error);
+    // Ignore errors for optional home config
 }
 
 // Validate gridColumns is a positive integer
-if (config.gridColumns == null || 
-    typeof config.gridColumns !== 'number' || 
-    !Number.isInteger(config.gridColumns) || 
+if (config.gridColumns == null ||
+    typeof config.gridColumns !== 'number' ||
+    !Number.isInteger(config.gridColumns) ||
     config.gridColumns <= 0) {
     log(`Invalid gridColumns value: ${config.gridColumns}. Must be a positive integer. Using default value of 4.`);
     config.gridColumns = 4;
@@ -177,7 +226,7 @@ function createWindow() {
                     }
                     return isValid;
                 });
-            
+
             const customHide = validatedSelectors.join(', ');
             const hideRules = customHide ? `, ${customHide}` : '';
 
@@ -246,14 +295,14 @@ function createWindow() {
             `).catch(err => {
                 const errorDetail =
                     (err && err.stack) ? err.stack :
-                    (err && err.message) ? err.message :
-                    (function () {
-                        try {
-                            return JSON.stringify(err);
-                        } catch (e) {
-                            return String(err);
-                        }
-                    })();
+                        (err && err.message) ? err.message :
+                            (function () {
+                                try {
+                                    return JSON.stringify(err);
+                                } catch (e) {
+                                    return String(err);
+                                }
+                            })();
                 log(`Failed to inject layout CSS: ${errorDetail}`);
             });
         }, 500);
@@ -312,13 +361,27 @@ function createWindow() {
 
 // Disable hardware acceleration if running on Raspberry Pi
 // This can help with performance on ARM devices
-if (process.platform === 'linux' && process.arch === 'arm' || process.arch === 'arm64') {
+if (process.platform === 'linux' && (process.arch === 'arm' || process.arch === 'arm64')) {
     app.disableHardwareAcceleration();
+    // Re-adding stability flags for Raspberry Pi environment
+    app.commandLine.appendSwitch('no-sandbox');
+    app.commandLine.appendSwitch('disable-dev-shm-usage');
+    app.commandLine.appendSwitch('disable-gpu-sandbox');
+    app.commandLine.appendSwitch('disable-gpu');
+    app.commandLine.appendSwitch('disable-software-rasterizer');
+    app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor');
+
+    // Low-level sandbox/namespace bypass
+    app.commandLine.appendSwitch('disable-setuid-sandbox');
+    app.commandLine.appendSwitch('disable-namespace-sandbox');
+    app.commandLine.appendSwitch('no-zygote');
 }
 
-// Add --no-sandbox for development and Raspberry Pi environments
-// This is needed because the sandbox requires specific permissions
+// Global safety flags
 app.commandLine.appendSwitch('no-sandbox');
+app.commandLine.appendSwitch('disable-dev-shm-usage');
+app.commandLine.appendSwitch('disable-setuid-sandbox');
+app.commandLine.appendSwitch('disable-namespace-sandbox');
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {

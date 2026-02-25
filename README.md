@@ -44,12 +44,12 @@ A dedicated Electron-based kiosk browser for displaying security camera feeds on
 
 2. **Transfer the .deb file** to your Raspberry Pi:
    ```bash
-   scp dist/camera-kiosk-browser_1.0.0_armv7l.deb pi@your-pi-ip:~/
+   scp dist/camera-kiosk-browser_1.0.2_armv7l.deb pi@your-pi-ip:~/
    ```
 
 3. **Install on Raspberry Pi**:
    ```bash
-   sudo dpkg -i camera-kiosk-browser_1.0.0_armv7l.deb
+   sudo dpkg -i camera-kiosk-browser_1.0.2_armv7l.deb
    sudo apt-get install -f  # Fix any dependency issues
    ```
 
@@ -66,17 +66,14 @@ A dedicated Electron-based kiosk browser for displaying security camera feeds on
    npm install
    ```
 
-## Configuration
-
-Edit `config.json` to customize the browser behavior:
+Edit `config.json` to customize the browser behavior. When installed via `.deb`, you should create and edit this file in your user config directory: `~/.config/camera-kiosk-browser/config.json`.
 
 ```json
 {
-  "url": "http://localhost:8080",
+  "url": "http://your-cam-ip:8080",
   "fullscreen": true,
-  "autoReload": true,
-  "reloadInterval": 30000,
-  "disableShortcuts": true
+  "gridColumns": 4,
+  "zoomLevel": 1.0
 }
 ```
 

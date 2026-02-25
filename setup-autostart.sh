@@ -4,7 +4,8 @@
 
 AUTOSTART_DIR="$HOME/.config/autostart"
 DESKTOP_FILE="$AUTOSTART_DIR/camera-kiosk.desktop"
-APP_DIR=$(pwd)
+# Get the directory where this script is located
+APP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SCRIPT_PATH="$APP_DIR/start-kiosk.sh"
 
 echo "Configuring autostart for Camera Kiosk Browser..."
